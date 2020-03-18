@@ -1,36 +1,41 @@
+// Modules to control application life and create native browser window
 const { app, BrowserWindow } = require("electron");
-const express = require("express");
+const path = require("path");
 
-app.on("ready", function() {
-  var ex = express();
-
-  var mainWindow = new BrowserWindow({
+function createWindow() {
+  // Create the browser window.
+  const mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
-      nodeIntegration: true
+      preload: path.join(__dirname, "preload.js")
     }
   });
 
-  ex.get("/whats/:num/:msg", function(req, res) {
-    var numero = req.params.num;
-    var msg = req.params.msg;
-    enviar(numero, msg);
-    res.send("enviando Mensagem via whatsapp..");
-  });
+  // and load the index.html of the app.
+  mainWindow.loadFile("index.html");
 
-  function enviar(telefone, mensagem) {
-    mainWindow.loadURL(
-      "https://web.whatsapp.com/send?phone=" + telefone + "&text=" + mensagem,
-      {
-        userAgent:
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36"
-      }
-    );
-    mainWindow.webContents.executeJava(
-      'var{ipcRenderer,remote} = require("electron");var enviado = false;function tempo(){var btsend = document.getElementsByClassName("_3M-N-")[0];var inputSend = document.getElementsByClassName("_3u328")[1];if(typeof inputSend !== "undefined" && inputSend.innerText && !enviado){btsend.click();enviado=true;}else if(enviado){ipcRenderer.send("para", {status:true});}}setInterval(tempo,3000);'
-    );
-    mainWindow.show();
-  }
-  ex.listen(3400);
+  // Open the DevTools.
+  // mainWindow.webContents.openDevTools()
+}
+
+// This method will be called when Electron has finished
+// initialization and is ready to create browser windows.
+// Some APIs can only be used after this event occurs.
+app.whenReady().then(createWindow);
+
+// Quit when all windows are closed.
+app.on("window-all-closed", function() {
+  // On macOS it is common for applications and their menu bar
+  // to stay active until the user quits explicitly with Cmd + Q
+  if (process.platform !== "darwin") app.quit();
 });
+
+app.on("activate", function() {
+  // On macOS it's common to re-create a window in the app when the
+  // dock icon is clicked and there are no other windows open.
+  if (BrowserWindow.getAllWindows().length === 0) createWindow();
+});
+
+// In this file you can include the rest of your app's specific main process
+// code. You can also put them in separate files and require them here.
